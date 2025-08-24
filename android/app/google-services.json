@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "387231096606",
+    "project_id": "myproject-1551b",
+    "storage_bucket": "myproject-1551b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387231096606:android:92e608e844e0a0a68fb30f",
+        "android_client_info": {
+          "package_name": "com.example.health_management_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-pGsqY_7G0Xx0rLwK5tcOzIECz9caQJw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387231096606:android:29cd4544ad7b99478fb30f",
+        "android_client_info": {
+          "package_name": "com.example.room_booking_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-pGsqY_7G0Xx0rLwK5tcOzIECz9caQJw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
