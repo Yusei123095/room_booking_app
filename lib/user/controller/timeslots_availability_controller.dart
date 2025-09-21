@@ -4,14 +4,37 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:room_booking_app/user/controller/booking_date_controller.dart';
 import 'package:room_booking_app/utils/time_utils.dart';
 
+// StreamProvider for occupied timeslots (dynamic data)
+final occupiedTimeslotsProvider = StreamProvider.family<List<int>, ({String? roomId, String? bookId})>
+((ref, arg) {
+    final selectedDate = ref.watch(bookingDateProvider.select((u) => u.tempSelectedDate))!;
+    final endOfSelectedDate = selectedDate.add(const Duration(days: 1));
+
+    return FirebaseFirestore.instance
+        .collection("books")
+        .where("room", isEqualTo: arg.roomId ?? "")
+        .where("date", isGreaterThanOrEqualTo: selectedDate)
+        .where("date", isLessThan: endOfSelectedDate)
+        .snapshots() // This is the key change!
+        .map((snapshot) {
+      final occupiedSlits = <int>[];
+      for (var doc in snapshot.docs) {
+        if(doc.id != arg.bookId){occupiedSlits.addAll(List<int>.from(doc.data()['timeslots']));}
+      }
+      return occupiedSlits;
+    });
+  },
+);
+
 final timeslotsProvider = FutureProvider.family<
   List<Map<String, dynamic>>,
-  String?
->((ref, roomId) async {
+  ({String? roomId, String? bookId})
+>((ref, arg) async {
   final selectedDate =
       ref.watch(bookingDateProvider.select((u) => u.tempSelectedDate))!;
-  final endOfSelectedDate = selectedDate.add(const Duration(days: 1));
-  Map<int, List<dynamic>> timeslotDetails = {};
+  final occupiedSlots = ref.watch(occupiedTimeslotsProvider((roomId: arg.roomId, bookId: arg.bookId)));
+  final occupiedList = occupiedSlots.value ?? [];
+  Map<int, Map<String, dynamic>> timeslotDetails = {};
 
   final allTimeSlots =
       await FirebaseFirestore.instance
@@ -19,24 +42,16 @@ final timeslotsProvider = FutureProvider.family<
           .orderBy("number", descending: false)
           .get();
 
-  final snapshot =
-      await FirebaseFirestore.instance
-          .collection("books")
-          .where("room", isEqualTo: roomId ?? "")
-          .where("date", isGreaterThanOrEqualTo: selectedDate)
-          .where("date", isLessThan: endOfSelectedDate)
-          .get();
 
-  List<int> occupiedSlits = [];
 
-  for (var doc in snapshot.docs) {
-    occupiedSlits.addAll(List<int>.from(doc.data()['timeslots']));
-  }
   final timeslotsWithAvailability =
       allTimeSlots.docs.map((timeslot) {
         final timeslotData = timeslot.data();
+        timeslotDetails[timeslotData["number"]] = timeslotData;
+
+
         final isAvailable =
-            occupiedSlits.contains(timeslotData['number']) ||
+            occupiedList.contains(timeslotData['number']) ||
             checkPassedTime(
               selectedDate,
               timeslotData['start_hour'],
