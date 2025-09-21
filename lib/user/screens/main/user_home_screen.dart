@@ -45,47 +45,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
               // Display next booking coming earliest
               SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Your Next Booking",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ComingBookingListScreen(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      child: Row(
-                        children: [
-                          Text(
-                            "View All",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 30,
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+
               nextBooking.when(
                 data: (data) {
                   final bookId = data.id;
@@ -101,17 +61,65 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                             .get(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return LoadingBookingDisplay();
+                        return Center(child: Container(
+
+                            child: LoadingBookingDisplay()));
                       }
                       if (snapshot.hasError || !snapshot.hasData) {
                         return Text("Also no data");
                       }
+                      final room_id = snapshot.data!.id;
                       final room_data = snapshot.data!.data() ?? {};
-                      return InkWell(
-                        onTap: (){
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => BookDetailScreen(bookInfo: book_info, bookId: bookId, room: room_data)));
-                        },
-                        child: BookingDisplay(book: book_info, room: room_data, bookId: bookId,),
+                      return Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Your Next Booking",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ComingBookingListScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "View All",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 30,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          InkWell(
+                            onTap: (){
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => BookDetailScreen(bookInfo: book_info, bookId: bookId, room: room_data, roomId: room_id,)));
+                            },
+                            child: BookingDisplay(book: book_info, room: room_data, bookId: bookId,),
+                          ),
+                        ],
                       );
                     },
                   );
@@ -120,7 +128,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 loading:
                     () => SizedBox(
                       height: 140,
-                      width: double.infinity,
+                      width: 140,
                       child: CircularProgressIndicator(),
                     ),
               ),
