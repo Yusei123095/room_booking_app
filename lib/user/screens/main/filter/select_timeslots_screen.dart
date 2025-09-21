@@ -1,3 +1,6 @@
+import 'dart:ffi';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:room_booking_app/user/controller/booking_date_controller.dart';
@@ -11,8 +14,9 @@ import 'package:room_booking_app/widgets/time_selection/timeslots_grid.dart';
 
 class SelectTimeslotsScreen extends ConsumerStatefulWidget {
   final String? room_id;
+  final Map<String, dynamic>? selectedDetail;
 
-  const SelectTimeslotsScreen({super.key, this.room_id});
+  const SelectTimeslotsScreen({super.key, this.room_id, this.selectedDetail});
 
   @override
   ConsumerState<SelectTimeslotsScreen> createState() =>
@@ -29,17 +33,22 @@ class _SelectTimeslotsScreenState extends ConsumerState<SelectTimeslotsScreen> {
     // set temporary selected and focused date based on the selected date
 
     Future.microtask(() {
-      bookingDateTimeNotifier.setTempFocusedDate(
-        bookingDateTimeState.selectedDate!,
-      );
-      bookingDateTimeNotifier.setTempSelectedDate(
-        bookingDateTimeState.selectedDate!,
-      );
+      DateTime setDate =
+          widget.selectedDetail == null
+              ? bookingDateTimeState.selectedDate!
+              : widget.selectedDetail!["date"].toDate() ?? DateTime.now();
 
-      bookingDateTimeNotifier.setTempTimeslots();
+      List<int> setTimeslots =
+          widget.selectedDetail == null
+              ? bookingDateTimeState.timeslots
+              : List<int>.from(widget.selectedDetail!["timeslots"] ?? []);
+
+      bookingDateTimeNotifier.setTempFocusedDate(setDate);
+      bookingDateTimeNotifier.setTempSelectedDate(setDate);
+
+      bookingDateTimeNotifier.setTempTimeslots(setTimeslots);
     });
   }
-
 
   Map<String, List<Map<String, dynamic>>> getListTimeZone(
     List<Map<String, dynamic>> timeslots,
@@ -59,18 +68,29 @@ class _SelectTimeslotsScreenState extends ConsumerState<SelectTimeslotsScreen> {
         evening.add(timeslot);
       }
     }
-    return {"morning": morning, "afternoon": afternoon, "evening" :evening};
+    return {"morning": morning, "afternoon": afternoon, "evening": evening};
   }
 
   bool isSettable = false;
 
   @override
   Widget build(BuildContext context) {
-    final timeslots = ref.watch(timeslotsProvider(widget.room_id));
+    final bookId =
+        widget.selectedDetail != null ? widget.selectedDetail!["bookId"] : null;
+    final timeslots = ref.watch(
+      timeslotsProvider((roomId: widget.room_id, bookId: bookId)),
+    );
     final isAvailable = ref.watch(
-      roomAvailabilityProvider((isTemp: true, roomId: widget.room_id)),
+      roomAvailabilityProvider((
+        isTemp: true,
+        roomId: widget.room_id,
+        bookId: bookId,
+      )),
     );
     final bookingDateTimeState = ref.watch(bookingDateProvider);
+    final bookingStateNotifier = ref.read(bookingDateProvider.notifier);
+    print(bookingDateTimeState.tempTimeslots);
+
     return timeslots.when(
       data: (data) {
         final timeslotsByTimeZone = getListTimeZone(data);
@@ -168,6 +188,7 @@ class _SelectTimeslotsScreenState extends ConsumerState<SelectTimeslotsScreen> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
+
                                   Text(
                                     "${convertDateFormat(bookingDateTimeState.tempSelectedDate!)}・${ref.read(bookingDateProvider.notifier).getStartEndTime(true)}",
                                     style: TextStyle(
@@ -186,13 +207,10 @@ class _SelectTimeslotsScreenState extends ConsumerState<SelectTimeslotsScreen> {
                                 });
                                 // shows text and icon based on the time slot availability
                                 if (data == null) {
-                                  print("Hellp");
                                   return UnselectedText();
                                 } else if (!data) {
-                                  print("object");
                                   return UnavailableText();
                                 } else {
-                                  print("No");
                                   setState(() {
                                     isSettable = true;
                                   });
@@ -213,13 +231,20 @@ class _SelectTimeslotsScreenState extends ConsumerState<SelectTimeslotsScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () {
-                                if(isSettable){
-                                  ref
-                                      .read(bookingDateProvider.notifier)
-                                      .setDateTimeslots();
-                                  Navigator.of(context).pop();
+                                if (isSettable) {
+                                  if (widget.selectedDetail == null) {
+                                    bookingStateNotifier.setDateTimeslots();
+                                    Navigator.of(context).pop();
+                                  } else {
+                                    bookingStateNotifier.modifyBookingTime(
+                                      widget.selectedDetail!["bookId"] ?? "",
+                                    );
+                                    int count = 0;
+                                    Navigator.popUntil(context, (route) {
+                                      return count++ >= 2; // pops 2 pages
+                                    });
+                                  }
                                 }
-
                               },
                               child: Padding(
                                 padding: EdgeInsets.symmetric(vertical: 10),
@@ -252,8 +277,8 @@ class _SelectTimeslotsScreenState extends ConsumerState<SelectTimeslotsScreen> {
         );
       },
       error: (error, _) {
-        print(error);
-        return Scaffold();},
+        return Scaffold();
+      },
       loading: () => Scaffold(backgroundColor: Colors.white),
     );
   }
