@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:room_booking_app/user/service/auth_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -9,91 +10,91 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _locationController = TextEditingController();
-  TextEditingController _sizeController = TextEditingController();
-  TextEditingController _amenityController = TextEditingController();
-  
-  String _defineCapacity(int capacity){
-    if(capacity > 0 && capacity < 7){
-      return "Small (<=6)";
-    }else if (capacity >= 7 && capacity < 13){
-      return "Medium (7-12)";
-    }else{
-      return "Large (13+)";
-    }
-  }
-
-  final CollectionReference rooms = FirebaseFirestore.instance.collection(
-    "rooms",
-  );
-
-  List<String> _createNameOption(String value) {
-    var name = value.toLowerCase();
-    var times = <int>[];
-
-    for (int i = name.length; i >= 1; i--) {
-      times.add(i);
-    }
-    var nameList = <String>[];
-    for (int time in times) {
-      for (int i = name.length; i >= 0; i--) {
-
-        if (i + time <= name.length) {
-
-          final getName = name.substring(i, i + time);
-          nameList.add(getName);
-          name = value.toLowerCase();
-        }
-      }
-    }
-    return nameList;
-  }
-
-  Future<void> uploadRoom(String name, String size, String location) async {
-    String fixedName = name.trim();
-    List<String> nameList = _createNameOption(fixedName);
-
-    await rooms.add({
-      "room_name": name,
-      "room_name_array": nameList,
-      "room_size": 20,
-      "room_location": "Floor 3",
-      "room_desc": "hello",
-      "room_amenities": ["Wifi", "Coffee", "Projector"],
-      "room_capacity": _defineCapacity(11)
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    AuthService _auth = AuthService();
     return Scaffold(
-      body: Column(
-        children: [
-          SizedBox(height: 100),
-          TextField(controller: _nameController),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Column(
+            children: [
+              SizedBox(height: 30),
+              Container(
+                child: Icon(Icons.person, color: Colors.white, size: 60),
+                height: 80,
+                width: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: 15,),
 
-          SizedBox(height: 20),
 
-          TextField(controller: _locationController),
+              SizedBox(height: 15,),
 
-          SizedBox(height: 20),
+              FutureBuilder(future: _auth.getCurrentUserInfo(), builder: (context, snapshot){
+                if(snapshot.connectionState == ConnectionState.waiting){
+                  return CircularProgressIndicator();
+                }
 
-          TextField(controller: _sizeController),
+                final data = snapshot.data!.data() ?? {};
+                return Container(
+                  padding: EdgeInsets.all(10),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 25.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Name", style: TextStyle(fontSize: 18, color: Colors.black54, fontWeight: FontWeight.w600),),
 
-          SizedBox(height: 20),
+                          Text(data["name"] ?? "No Data", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w600),)
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 25.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("ID", style: TextStyle(fontSize: 18, color: Colors.black54, fontWeight: FontWeight.w600),),
 
-          TextField(controller: _amenityController),
+                          Text(_auth.getCurrentUser()!.uid, style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w600),)
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 0.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Email Address", style: TextStyle(fontSize: 18, color: Colors.black54, fontWeight: FontWeight.w600),),
 
-          SizedBox(height: 20),
+                          Text(data["email"] ?? "No Data", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w600),)
+                        ],
+                      ),
+                    ),
+                  ]),
+                );
+              }),
 
-          ElevatedButton(
-            onPressed: () {
-              uploadRoom(_nameController.text, "size", "location");
-            },
-            child: Container(child: Text("Press")),
+              SizedBox(height: 20,),
+              Row(children: [
+
+              ],)
+
+
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
