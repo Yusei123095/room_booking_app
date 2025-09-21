@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:room_booking_app/user/screens/main/filter/select_timeslots_screen.dart';
+import 'package:room_booking_app/user/screens/main/modify_booking_screen.dart';
 import 'package:room_booking_app/utils/icon_util.dart';
 import 'package:room_booking_app/widgets/book_detail/booking_info_row.dart';
 import 'package:room_booking_app/widgets/book_detail/modification_policy_display.dart';
@@ -8,12 +10,14 @@ import 'package:room_booking_app/widgets/time_selection/date_time_display.dart';
 import 'package:room_booking_app/utils/time_utils.dart';
 
 class BookDetailScreen extends StatelessWidget {
+  final String roomId;
   final Map<String, dynamic> room;
   final Map<String, dynamic> bookInfo;
   final String bookId;
 
   const BookDetailScreen({
     super.key,
+    required this.roomId,
     required this.bookInfo,
     required this.bookId,
     required this.room,
@@ -21,9 +25,16 @@ class BookDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Future<void> cancelBooking() async {
+      await FirebaseFirestore.instance.collection("books").doc(bookId).delete();
+    }
+
+
     DateTime due = bookInfo['date'].toDate().subtract(Duration(hours: 3));
-    print(due);
-    bool isOverDue = due.difference(DateTime.now()).isNegative;
+    bool isOverDue = due
+        .difference(DateTime.now())
+        .isNegative;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -108,25 +119,44 @@ class BookDetailScreen extends StatelessWidget {
                       ),
 
                       SizedBox(height: 20),
-                      BookingInfoRow(
-                        leadingWidget: Container(
-                          height: 45,
-                          width: 45,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.purple[100]!.withOpacity(0.7),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.person,
-                              size: 28,
-                              color: Colors.purple,
+                      FutureBuilder(future: FirebaseFirestore.instance
+                          .collection("users").doc(bookInfo["user"]).get(),
+                          builder: (context, snapshot) {
+                          String userName;
+                          if(snapshot.connectionState == ConnectionState.waiting){
+                            userName = "";
+                          }
+
+                          else if(snapshot.hasError || !snapshot.hasData){
+                            userName = "No Data";
+                          }
+
+                          else{
+                            final data = snapshot.data!.data();
+                            userName = data!["name"] ?? "No Data";
+                          }
+
+                          return BookingInfoRow(
+                            leadingWidget: Container(
+                              height: 45,
+                              width: 45,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.purple[100]!.withOpacity(0.7),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.person,
+                                  size: 28,
+                                  color: Colors.purple,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        label: "Guest Name",
-                        content: "Yusei Kinoshita",
-                      ),
+                            label: "Guest Name",
+                            content: userName,
+                          );
+                          }),
+
                       SizedBox(height: 20),
 
                       BookingInfoRow(
@@ -238,31 +268,32 @@ class BookDetailScreen extends StatelessWidget {
                         children: List.generate(
                           room['room_amenities'].length,
 
-                          (index) => Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 2.0,
-                              horizontal: 5,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  convertStringToIcon(
-                                    room['room_amenities'][index],
-                                  ),
-                                  size: 30,
-                                  color: Colors.grey,
+                              (index) =>
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2.0,
+                                  horizontal: 5,
                                 ),
-                                Text(
-                                  room['room_amenities'][index],
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black54,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      convertStringToIcon(
+                                        room['room_amenities'][index],
+                                      ),
+                                      size: 30,
+                                      color: Colors.grey,
+                                    ),
+                                    Text(
+                                      room['room_amenities'][index],
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
                         ),
                       ),
                     ],
@@ -291,73 +322,91 @@ class BookDetailScreen extends StatelessWidget {
               ModificationPolicyDisplay(overDue: isOverDue, due: due),
 
               SizedBox(height: 20),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: Colors.blue[50],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.edit_calendar_rounded,
-                            size: 30,
-                            color: Colors.blue[700],
+              if (!isOverDue)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Colors.blue[50],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          SizedBox(width: 10),
-                          Text(
-                            "Modify",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) =>
+                                  SelectTimeslotsScreen(
+                                    room_id: roomId,
+                                    selectedDetail: {
+                                      ...bookInfo,
+                                      "bookId": bookId,
+                                    },
+                                  ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.edit_calendar_rounded,
+                              size: 30,
                               color: Colors.blue[700],
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 30),
-
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: Colors.red[100]!.withOpacity(0.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                            SizedBox(width: 10),
+                            Text(
+                              "Modify",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      onPressed: () {},
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(Icons.close, size: 30, color: Colors.red),
-                          SizedBox(width: 10),
-                          Text(
-                            "Modify",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
+                    ),
+                    SizedBox(width: 30),
+
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Colors.red[100]!.withOpacity(0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ],
+                        ),
+                        onPressed: () {
+                          cancelBooking();
+                          Navigator.pop(context);
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.close, size: 30, color: Colors.red),
+                            SizedBox(width: 10),
+                            Text(
+                              "Remove",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               SizedBox(height: 40),
             ],
           ),
