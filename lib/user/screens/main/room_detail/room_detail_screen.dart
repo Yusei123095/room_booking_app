@@ -40,7 +40,7 @@ class _RoomDetailState extends ConsumerState<RoomDetail> {
     final bookingStatus = ref.watch(bookingDateProvider);
 
     final isRoomAvailable = ref.watch(
-      roomAvailabilityProvider((isTemp: false, roomId: widget.room.id)),
+      roomAvailabilityProvider((isTemp: false, roomId: widget.room.id, bookId: null)),
     );
 
     final room_info = widget.room.data()!;
@@ -309,7 +309,10 @@ class _RoomDetailState extends ConsumerState<RoomDetail> {
                               } catch (e) {
                                 print(e);
                               } finally {
-                                Navigator.of(context).pop();
+                                int count = 0;
+                                Navigator.popUntil(context, (route) {
+                                  return count++ >= 2; // pops 2 pages
+                                });
                               }
                             },
                           ),
