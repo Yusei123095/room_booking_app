@@ -53,6 +53,7 @@ class _ComingBookingListScreenState
                                     MaterialPageRoute(
                                       builder:
                                           (_) => BookDetailScreen(
+                                            roomId: data.id,
                                             room: data.data() ?? {},
                                             bookInfo: comingBooking,
                                             bookId: comingBookId,
