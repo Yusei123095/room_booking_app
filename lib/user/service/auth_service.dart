@@ -13,6 +13,10 @@ class AuthService {
     return user;
   }
 
+  Future<DocumentSnapshot<Map<String, dynamic>>> getCurrentUserInfo() async{
+    return await FirebaseFirestore.instance.collection("users").doc(getCurrentUser()!.uid).get();
+  }
+
   Future<String?> login({
     required String email,
     required String password,
