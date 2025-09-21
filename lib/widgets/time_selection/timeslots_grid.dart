@@ -52,18 +52,16 @@ class _TimeslotsGridState extends ConsumerState<TimeslotsGrid> {
           ),
           itemBuilder: (context, index) {
             Map<String, dynamic> timeslot = widget.timeslots[index];
-            print(timeslot);
-            final isChecked = selectedTimeslots.contains(timeslot);
+
+            final isChecked = selectedTimeslots.contains(timeslot["number"]);
+
 
             return TimeSelectionSimpleButton(
                 label: timeslot['start'],
                 isBooked: timeslot['isAvailable']!,
               isChecked: isChecked,
               onTap: () {
-
-                  bookingDateNotifier.updateTempTimeslots(timeslot, !isChecked);
-
-
+                  bookingDateNotifier.updateTempTimeslots(timeslot["number"], !isChecked);
               }
               );
           },
