@@ -4,43 +4,42 @@ class BookingDateTimeState {
   final DateTime? tempFocusedDate;
   final DateTime? tempSelectedDate;
   final DateTime? selectedDate;
-  final List<Map<String, dynamic>> tempTimeslots;
-  final List<Map<String, dynamic>> timeslots;
-  final Map<int, List<dynamic>?> timeslotDetails;
+  final List<int> tempTimeslots;
+  final List<int> timeslots;
+  final Map<int, Map<String, dynamic>?> timeslotDetails;
 
   BookingDateTimeState({
     this.tempFocusedDate,
     this.tempSelectedDate,
     this.selectedDate,
-    List<Map<String, dynamic>>? tempTimeslots,
-    List<Map<String, dynamic>>? timeslots,
-    Map<int, List<dynamic>?>? timeslotDetails
-  }) : tempTimeslots = tempTimeslots ?? [], timeslots = timeslots ?? [], timeslotDetails = timeslotDetails ?? {};
+    List<int>? tempTimeslots,
+    List<int>? timeslots,
+    Map<int, Map<String, dynamic>?>? timeslotDetails
+  }) : tempTimeslots = tempTimeslots ?? [],
+        timeslots = timeslots ?? [],
+        timeslotDetails = timeslotDetails ?? {};
 
   BookingDateTimeState copyWith({
     DateTime? tempFocusedDate,
     DateTime? tempSelectedDate,
-    Map<String, dynamic>? timeslot,
+    int? timeslot,
     bool? add,
     bool? resetTimeslots,
-    bool? setTempTimeslot,
+    List<int>? initialTempTimeslots,
     bool? updateDateTime,
-    Map<int, List<dynamic>?>? timeslotDetails
+    Map<int, Map<String, dynamic>?>? timeslotDetails
   }) {
 
-
-
-    List<Map<String, dynamic>> updatedSlots = List<Map<String, dynamic>>.from(tempTimeslots);
-    //Map<int, List<String>?>? updatedTimeslotDetails = Map<int, List<String>?>.from(timeslotDetails);
+    List<int> updatedSlots = List<int>.from(tempTimeslots);
 
     if (add == true && timeslot != null) {
       if(tempTimeslots.isEmpty){
         updatedSlots = [timeslot];
-        //updatedTimeslotDetails[timeslot] = timeslotDetail;
+
       }else{
-        if(tempTimeslots.length >= 1 && (timeslot['number'] == tempTimeslots[0]['number'] - 1 || timeslot['number'] == tempTimeslots[tempTimeslots.length -1]['number'] + 1)) {
+        if(tempTimeslots.isNotEmpty && (timeslot == tempTimeslots[0] - 1 || timeslot == tempTimeslots[tempTimeslots.length -1] + 1)) {
           updatedSlots.add(timeslot);
-          //updatedTimeslotDetails[timeslot] = timeslotDetail;
+
         }else{
           updatedSlots = [timeslot];
         }
@@ -53,25 +52,21 @@ class BookingDateTimeState {
       // if eliminated item is an only item of the list -> empty list
       if(updatedSlots.length <= 1){
         updatedSlots = [];
-        //updatedTimeslotDetails.remove(timeslot);
+
 
         // if eliminated element is side of the list -> remove only the item
       }else if(index == 0 || index == tempTimeslots.length - 1){
         updatedSlots.remove(timeslot);
-        //updatedTimeslotDetails.remove(timeslot);
+
 
         // eliminated item is at non-side index -> remove all items from the item index to nearest side
       }else if(tempTimeslots.length > 2 && index > 0 && index < tempTimeslots.length -1){
         if(tempTimeslots.length /2 < index + 1){
-          // for(int i = 0; i <= index ; i++){
-          //   updatedTimeslotDetails.remove(tempTimeslots[tempTimeslots.length - 1 - i]);
-          // }
+
           updatedSlots.removeRange(index, tempTimeslots.length);
         }else {
           updatedSlots.removeRange(0, index+1);
-          // for(int i = 0; i <= index; i++){
-          //   updatedTimeslotDetails.remove(tempTimeslots[i]);
-          // }
+
         }
       }
     }
@@ -79,10 +74,10 @@ class BookingDateTimeState {
       updatedSlots = [];
     }
 
-    if(setTempTimeslot == true){
-      updatedSlots = this.timeslots;
+    if(initialTempTimeslots != null){
+      updatedSlots = initialTempTimeslots;
     }
-    updatedSlots.sort((a, b) => a['number'].compareTo(b['number']));
+    updatedSlots.sort();
 
     return BookingDateTimeState(
       tempFocusedDate: tempFocusedDate ?? this.tempFocusedDate,
