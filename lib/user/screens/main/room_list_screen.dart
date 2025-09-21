@@ -165,7 +165,7 @@ class _UserBookingScreenState extends ConsumerState<UserBookingScreen> {
                                 availabilityDisplay: ref.watch(
                                   roomAvailabilityProvider(
                                       (isTemp: false, roomId: data.docs[index]
-                                          .id)))
+                                          .id, bookId: null)))
                                       .when(
                                     data: (data) {
                                       if (data == null) {
